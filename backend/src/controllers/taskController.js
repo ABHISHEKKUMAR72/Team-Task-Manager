@@ -6,15 +6,15 @@ export const createTask = async (req, res) => {
     const { title, description, priority, dueDate, assignedTo } = req.body;
 
     // Check if project exists and user has access
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const hasAccess = project.ownerId === req.user.id ||
+    const hasAccess = project.ownerId.toString() === req.user.id ||
       await ProjectMember.findOne({
-        where: { projectId, userId: req.user.id },
+        projectId, userId: req.user.id
       }) ||
       req.user.role === 'admin';
 
@@ -47,15 +47,15 @@ export const getProjectTasks = async (req, res) => {
     const { projectId } = req.params;
 
     // Check if project exists and user has access
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const hasAccess = project.ownerId === req.user.id ||
+    const hasAccess = project.ownerId.toString() === req.user.id ||
       await ProjectMember.findOne({
-        where: { projectId, userId: req.user.id },
+        projectId, userId: req.user.id
       }) ||
       req.user.role === 'admin';
 
@@ -63,8 +63,8 @@ export const getProjectTasks = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const tasks = await Task.findAll({
-      where: { projectId },
+    const tasks = await Task.find({
+      projectId,
     });
 
     res.json({
@@ -82,18 +82,18 @@ export const updateTask = async (req, res) => {
     const { taskId } = req.params;
     const { title, description, status, priority, dueDate, assignedTo } = req.body;
 
-    const task = await Task.findByPk(taskId);
+    const task = await Task.findById(taskId);
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
     // Check if user has access to the project
-    const project = await Project.findByPk(task.projectId);
+    const project = await Project.findById(task.projectId);
 
-    const hasAccess = project.ownerId === req.user.id ||
+    const hasAccess = project.ownerId.toString() === req.user.id ||
       await ProjectMember.findOne({
-        where: { projectId: task.projectId, userId: req.user.id },
+        projectId: task.projectId, userId: req.user.id
       }) ||
       req.user.role === 'admin';
 
@@ -101,14 +101,14 @@ export const updateTask = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    await task.update({
-      title: title || task.title,
-      description: description || task.description,
-      status: status || task.status,
-      priority: priority || task.priority,
-      dueDate: dueDate ? new Date(dueDate) : task.dueDate,
-      assignedTo: assignedTo || task.assignedTo,
-    });
+    task.title = title || task.title;
+    task.description = description || task.description;
+    task.status = status || task.status;
+    task.priority = priority || task.priority;
+    task.dueDate = dueDate ? new Date(dueDate) : task.dueDate;
+    task.assignedTo = assignedTo || task.assignedTo;
+    
+    await task.save();
 
     res.json({
       message: 'Task updated successfully',
@@ -124,18 +124,18 @@ export const deleteTask = async (req, res) => {
   try {
     const { taskId } = req.params;
 
-    const task = await Task.findByPk(taskId);
+    const task = await Task.findById(taskId);
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
     // Check if user has access to the project
-    const project = await Project.findByPk(task.projectId);
+    const project = await Project.findById(task.projectId);
 
-    const hasAccess = project.ownerId === req.user.id ||
+    const hasAccess = project.ownerId.toString() === req.user.id ||
       await ProjectMember.findOne({
-        where: { projectId: task.projectId, userId: req.user.id },
+        projectId: task.projectId, userId: req.user.id
       }) ||
       req.user.role === 'admin';
 
@@ -143,7 +143,7 @@ export const deleteTask = async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    await task.destroy();
+    await Task.findByIdAndDelete(taskId);
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
@@ -157,8 +157,8 @@ export const getTaskStats = async (req, res) => {
     const userId = req.user.id;
 
     // Get all tasks assigned to user
-    const assignedTasks = await Task.findAll({
-      where: { assignedTo: userId },
+    const assignedTasks = await Task.find({
+      assignedTo: userId,
     });
 
     const stats = {

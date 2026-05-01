@@ -1,273 +1,435 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { projectService, taskService } from '../services/api';
+import { projectService, taskService } from '../services/api.js';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Projects.css';
+import '../styles/App.css';
 
+
+
+/* ──────────────────────────────────────────────────────────
+   Projects List
+────────────────────────────────────────────────────────── */
 export const ProjectsListPage = () => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', dueDate: '' });
+  const [projects, setProjects]   = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [showForm, setShowForm]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm]           = useState({ name: '', description: '', dueDate: '' });
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await projectService.getProjects();
-        setProjects(response.data.projects);
-      } catch (err) {
-        setError('Failed to load projects');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProjects();
+    projectService.getProjects()
+      .then(r => setProjects(r.data.projects))
+      .catch(() => setError('Could not load projects.'))
+      .finally(() => setLoading(false));
   }, []);
 
-  const handleCreateProject = async (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
-      const response = await projectService.createProject(formData);
-      setProjects([...projects, response.data.project]);
-      setFormData({ name: '', description: '', dueDate: '' });
+      const r = await projectService.createProject(form);
+      setProjects(prev => [...prev, r.data.project]);
+      setForm({ name: '', description: '', dueDate: '' });
       setShowForm(false);
-    } catch (err) {
-      setError('Failed to create project');
+    } catch {
+      setError('Failed to create project.');
+    } finally { setSubmitting(false); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this project and all its tasks?')) return;
+    try {
+      await projectService.deleteProject(id);
+      setProjects(prev => prev.filter(p => p._id !== id));
+    } catch {
+      setError('Failed to delete project.');
     }
   };
 
-  const handleDeleteProject = async (projectId) => {
-    if (window.confirm('Are you sure?')) {
-      try {
-        await projectService.deleteProject(projectId);
-        setProjects(projects.filter(p => p.id !== projectId));
-      } catch (err) {
-        setError('Failed to delete project');
-      }
-    }
-  };
-
-  if (loading) return <div className="projects-page">Loading...</div>;
-
-  return (
-    <div className="projects-page">
-      <div className="projects-header">
-        <h1>Projects</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          {showForm ? 'Cancel' : 'New Project'}
-        </button>
-      </div>
-
-      {error && <div className="error-message">{error}</div>}
-
-      {showForm && (
-        <form onSubmit={handleCreateProject} className="project-form">
-          <input
-            type="text"
-            placeholder="Project Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-          <textarea
-            placeholder="Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          />
-          <input
-            type="date"
-            value={formData.dueDate}
-            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-          />
-          <button type="submit" className="btn-primary">Create Project</button>
-        </form>
-      )}
-
+  if (loading) return (
+    <div className="page-wrapper">
+      <div className="skeleton" style={{ height: 28, width: 180, marginBottom: 32 }} />
       <div className="projects-grid">
-        {projects.map(project => (
-          <div key={project.id} className="project-card">
-            <h3>{project.name}</h3>
-            <p>{project.description}</p>
-            <p className="status">{project.status}</p>
-            <div className="project-actions">
-              <button onClick={() => navigate(`/projects/${project.id}`)} className="btn-secondary">
-                View
-              </button>
-              <button onClick={() => handleDeleteProject(project.id)} className="btn-danger">
-                Delete
-              </button>
-            </div>
+        {[1,2,3].map(i => (
+          <div key={i} className="project-card">
+            <div className="skeleton" style={{ height: 20, width: '70%', marginBottom: 10 }} />
+            <div className="skeleton" style={{ height: 14, width: '90%', marginBottom: 6 }} />
+            <div className="skeleton" style={{ height: 14, width: '50%' }} />
           </div>
         ))}
       </div>
     </div>
   );
+
+  return (
+    <div className="page-wrapper projects-page">
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1>Projects</h1>
+          <p>{projects.length === 0 ? 'No projects yet' : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowForm(s => !s)}>
+          {showForm ? '✕ Cancel' : '+ New project'}
+        </button>
+      </div>
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {showForm && (
+        <div className="form-panel">
+          <h3>New project</h3>
+          <form onSubmit={handleCreate}>
+            <div className="form-grid">
+              <div className="field form-full">
+                <label>Project name *</label>
+                <input
+                  value={form.name}
+                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g. Website Redesign"
+                  required
+                />
+              </div>
+              <div className="field form-full">
+                <label>Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="What's this project about?"
+                  rows={3}
+                />
+              </div>
+              <div className="field">
+                <label>Due date</label>
+                <input
+                  type="date"
+                  value={form.dueDate}
+                  onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="form-actions" style={{ marginTop: 16 }}>
+              <button type="submit" className="btn btn-primary" disabled={submitting}>
+                {submitting ? 'Creating…' : 'Create project'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowForm(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {projects.length === 0 && !showForm ? (
+        <div className="empty-state">
+          <div className="empty-icon">📁</div>
+          <p>You haven't created any projects yet.<br />Hit <strong>New project</strong> to get started.</p>
+        </div>
+      ) : (
+        <div className="projects-grid">
+          {projects.map(project => (
+            <div key={project._id} className="project-card">
+              <div className="project-card-top">
+                <h3>{project.name}</h3>
+                <span className={`badge badge-${project.status}`}>{project.status}</span>
+              </div>
+              {project.description && (
+                <p className="project-desc">{project.description}</p>
+              )}
+              <div className="project-card-footer">
+                {project.dueDate && (
+                  <span className="project-due">
+                    📅 {new Date(project.dueDate).toLocaleDateString()}
+                  </span>
+                )}
+                <div className="project-actions">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => navigate(`/projects/${project._id}`)}
+                  >
+                    Open →
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => handleDelete(project._id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
+/* ──────────────────────────────────────────────────────────
+   Project Detail
+────────────────────────────────────────────────────────── */
 export const ProjectDetailPage = () => {
   const { projectId } = useParams();
-  const [project, setProject] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showTaskForm, setShowTaskForm] = useState(false);
-  const [taskFormData, setTaskFormData] = useState({
-    title: '',
-    description: '',
-    priority: 'medium',
-    dueDate: '',
-  });
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const [project, setProject]     = useState(null);
+  const [tasks, setTasks]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskSubmitting, setTaskSubmitting] = useState(false);
+  const [taskForm, setTaskForm]   = useState({ title: '', description: '', priority: 'medium', dueDate: '' });
 
   useEffect(() => {
-    const fetchProjectData = async () => {
+    const load = async () => {
       try {
-        const [projectRes, tasksRes] = await Promise.all([
+        const [projRes, taskRes] = await Promise.all([
           projectService.getProjectById(projectId),
           taskService.getProjectTasks(projectId),
         ]);
-        setProject(projectRes.data.project);
-        setTasks(tasksRes.data.tasks);
+        setProject(projRes.data.project);
+        setTasks(taskRes.data.tasks);
       } catch (err) {
-        setError('Failed to load project');
+        if (err.response?.status === 403 || err.response?.status === 404) {
+          setError("Project not found or you don't have access.");
+        } else {
+          setError('Failed to load project. Please try again.');
+        }
       } finally {
         setLoading(false);
       }
     };
-
-    fetchProjectData();
+    load();
   }, [projectId]);
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
+    setTaskSubmitting(true);
     try {
-      const response = await taskService.createTask(projectId, taskFormData);
-      setTasks([...tasks, response.data.task]);
-      setTaskFormData({ title: '', description: '', priority: 'medium', dueDate: '' });
+      const r = await taskService.createTask(projectId, taskForm);
+      setTasks(prev => [...prev, r.data.task]);
+      setTaskForm({ title: '', description: '', priority: 'medium', dueDate: '' });
       setShowTaskForm(false);
-    } catch (err) {
-      setError('Failed to create task');
-    }
+    } catch {
+      setError('Failed to create task.');
+    } finally { setTaskSubmitting(false); }
   };
 
-  const handleUpdateTask = async (taskId, updates) => {
+  const handleStatusChange = async (taskId, status) => {
     try {
-      const response = await taskService.updateTask(taskId, updates);
-      setTasks(tasks.map(t => t.id === taskId ? response.data.task : t));
-    } catch (err) {
-      setError('Failed to update task');
+      const r = await taskService.updateTask(taskId, { status });
+      setTasks(prev => prev.map(t => t._id === taskId ? r.data.task : t));
+    } catch {
+      setError('Failed to update task status.');
     }
   };
 
   const handleDeleteTask = async (taskId) => {
-    if (window.confirm('Are you sure?')) {
-      try {
-        await taskService.deleteTask(taskId);
-        setTasks(tasks.filter(t => t.id !== taskId));
-      } catch (err) {
-        setError('Failed to delete task');
-      }
+    if (!window.confirm('Delete this task?')) return;
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks(prev => prev.filter(t => t._id !== taskId));
+    } catch {
+      setError('Failed to delete task.');
     }
   };
 
-  if (loading) return <div className="project-detail">Loading...</div>;
-  if (!project) return <div className="project-detail">Project not found</div>;
+  const isOwner = project && user && project.ownerId?.toString() === (user.id ?? user._id)?.toString();
+
+  if (loading) return (
+    <div className="page-wrapper">
+      <div className="skeleton" style={{ height: 32, width: 300, marginBottom: 10 }} />
+      <div className="skeleton" style={{ height: 16, width: 200, marginBottom: 32 }} />
+      <div className="skeleton" style={{ height: 200, borderRadius: 10 }} />
+    </div>
+  );
+
+  if (error && !project) return (
+    <div className="page-wrapper">
+      <div className="alert alert-error">{error}</div>
+      <button className="btn btn-ghost" onClick={() => navigate('/projects')}>← Back to projects</button>
+    </div>
+  );
 
   return (
-    <div className="project-detail">
-      <h1>{project.name}</h1>
-      <p>{project.description}</p>
-      <p className="status">{project.status}</p>
-
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="members-section">
-        <h3>Team Members</h3>
-        {project.members && project.members.length > 0 ? (
-          <ul>
-            {project.members.map(member => (
-              <li key={member.id}>
-                {member.firstName} {member.lastName} ({member.ProjectMember?.role})
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No team members yet</p>
-        )}
+    <div className="page-wrapper project-detail">
+      {/* Header */}
+      <div className="project-detail-header">
+        <div>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ marginBottom: 12 }}
+            onClick={() => navigate('/projects')}
+          >
+            ← Projects
+          </button>
+          <h1>{project.name}</h1>
+          {project.description && <p>{project.description}</p>}
+          <div className="project-meta-row">
+            <span className={`badge badge-${project.status}`}>{project.status}</span>
+            {project.dueDate && (
+              <span style={{ fontSize: '.82rem', color: 'var(--muted)' }}>
+                📅 Due {new Date(project.dueDate).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className="tasks-section">
-        <div className="section-header">
-          <h3>Tasks</h3>
-          {project.ownerId === user?.id && (
-            <button onClick={() => setShowTaskForm(!showTaskForm)} className="btn-primary">
-              {showTaskForm ? 'Cancel' : 'New Task'}
-            </button>
+      {error && <div className="alert alert-error">{error}</div>}
+
+      <div className="detail-layout">
+        {/* Tasks column */}
+        <div className="tasks-section">
+          <div className="section-header">
+            <h3>Tasks ({tasks.length})</h3>
+            {(isOwner || true) && (
+              <button className="btn btn-primary btn-sm" onClick={() => setShowTaskForm(s => !s)}>
+                {showTaskForm ? '✕ Cancel' : '+ Add task'}
+              </button>
+            )}
+          </div>
+
+          {showTaskForm && (
+            <div className="task-form-panel">
+              <form onSubmit={handleCreateTask}>
+                <div className="task-form-grid">
+                  <div className="field" style={{ gridColumn: '1 / -1' }}>
+                    <label>Task title *</label>
+                    <input
+                      value={taskForm.title}
+                      onChange={e => setTaskForm(p => ({ ...p, title: e.target.value }))}
+                      placeholder="e.g. Design landing page"
+                      required
+                    />
+                  </div>
+                  <div className="field" style={{ gridColumn: '1 / -1' }}>
+                    <label>Description</label>
+                    <textarea
+                      value={taskForm.description}
+                      onChange={e => setTaskForm(p => ({ ...p, description: e.target.value }))}
+                      placeholder="Optional details…"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Priority</label>
+                    <select
+                      value={taskForm.priority}
+                      onChange={e => setTaskForm(p => ({ ...p, priority: e.target.value }))}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Due date</label>
+                    <input
+                      type="date"
+                      value={taskForm.dueDate}
+                      onChange={e => setTaskForm(p => ({ ...p, dueDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="form-actions" style={{ marginTop: 14 }}>
+                  <button type="submit" className="btn btn-primary" disabled={taskSubmitting}>
+                    {taskSubmitting ? 'Adding…' : 'Add task'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {tasks.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">📝</div>
+              <p>No tasks yet. Add one to get started.</p>
+            </div>
+          ) : (
+            <div className="tasks-list">
+              {tasks.map(task => (
+                <div key={task._id} className="task-card">
+                  <div className="task-card-top">
+                    <h4>{task.title}</h4>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      style={{ padding: '4px 8px', fontSize: '.78rem' }}
+                      onClick={() => handleDeleteTask(task._id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {task.description && <p className="task-desc">{task.description}</p>}
+                  <div className="task-card-meta">
+                    <select
+                      className="task-status-select"
+                      value={task.status}
+                      onChange={e => handleStatusChange(task._id, e.target.value)}
+                    >
+                      <option value="todo">To Do</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                    <span className={`badge badge-${task.priority}`}>{task.priority}</span>
+                    {task.dueDate && (
+                      <span style={{ fontSize: '.78rem', color: 'var(--muted)' }}>
+                        📅 {new Date(task.dueDate).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
-        {showTaskForm && (
-          <form onSubmit={handleCreateTask} className="task-form">
-            <input
-              type="text"
-              placeholder="Task Title"
-              value={taskFormData.title}
-              onChange={(e) => setTaskFormData({ ...taskFormData, title: e.target.value })}
-              required
-            />
-            <textarea
-              placeholder="Description"
-              value={taskFormData.description}
-              onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
-            />
-            <select
-              value={taskFormData.priority}
-              onChange={(e) => setTaskFormData({ ...taskFormData, priority: e.target.value })}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <input
-              type="date"
-              value={taskFormData.dueDate}
-              onChange={(e) => setTaskFormData({ ...taskFormData, dueDate: e.target.value })}
-            />
-            <button type="submit" className="btn-primary">Create Task</button>
-          </form>
-        )}
-
-        <div className="tasks-list">
-          {tasks.map(task => (
-            <div key={task.id} className="task-card">
-              <h4>{task.title}</h4>
-              <p>{task.description}</p>
-              <select
-                value={task.status}
-                onChange={(e) => handleUpdateTask(task.id, { status: e.target.value })}
-                className="status-select"
-              >
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
-              <div className="task-meta">
-                <span className={`priority ${task.priority}`}>{task.priority}</span>
-                {task.dueDate && (
-                  <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
-                )}
+        {/* Sidebar */}
+        <aside className="detail-sidebar">
+          <div className="sidebar-card">
+            <h4>Project info</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: '.87rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Status</span>
+                <span className={`badge badge-${project.status}`}>{project.status}</span>
               </div>
-              {project.ownerId === user?.id && (
-                <button onClick={() => handleDeleteTask(task.id)} className="btn-danger">
-                  Delete
-                </button>
+              {project.dueDate && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--muted)' }}>Due date</span>
+                  <span>{new Date(project.dueDate).toLocaleDateString()}</span>
+                </div>
               )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Created</span>
+                <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--muted)' }}>Tasks</span>
+                <span>{tasks.length} total</span>
+              </div>
             </div>
-          ))}
-        </div>
+          </div>
+
+          {project.members && project.members.length > 0 && (
+            <div className="sidebar-card">
+              <h4>Team</h4>
+              {project.members.map(m => (
+                <div key={m._id} className="member-item">
+                  <div className="member-avatar">
+                    {(m.firstName?.[0] ?? '') + (m.lastName?.[0] ?? '')}
+                  </div>
+                  <div>
+                    <div className="member-name">{m.firstName} {m.lastName}</div>
+                    <div className="member-role">{m.role ?? 'member'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );

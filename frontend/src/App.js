@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Navigation } from './components/Navigation';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { LoginPage, SignupPage } from './pages/AuthPages';
-import { Dashboard } from './pages/Dashboard';
-import { ProjectsListPage, ProjectDetailPage } from './pages/ProjectsPages';
+import { Navigation } from './components/Navigation.jsx';
+import { ProtectedRoute } from './components/ProtectedRoute.jsx';
+import { LoginPage, SignupPage } from './pages/AuthPages.jsx';
+import { Dashboard } from './pages/Dashboard.jsx';
+import { ProjectsListPage, ProjectDetailPage } from './pages/ProjectsPages.jsx';
 import './styles/App.css';
 
 const AppContent = () => {

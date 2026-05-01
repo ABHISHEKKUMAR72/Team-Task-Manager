@@ -1,31 +1,9 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const ProjectMember = sequelize.define('ProjectMember', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  projectId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  userId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  role: {
-    type: DataTypes.ENUM('admin', 'member'),
-    defaultValue: 'member',
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-}, {
-  timestamps: false,
-  tableName: 'project_members',
-});
+const projectMemberSchema = new mongoose.Schema({
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  role: { type: String, enum: ['admin', 'member'], default: 'member' }
+}, { timestamps: true });
 
-export default ProjectMember;
+export default mongoose.model('ProjectMember', projectMemberSchema);

@@ -14,7 +14,7 @@ export const createProject = async (req, res) => {
 
     // Add owner as project member with admin role
     await ProjectMember.create({
-      projectId: project.id,
+      projectId: project._id,
       userId: req.user.id,
       role: 'admin',
     });
@@ -31,15 +31,7 @@ export const createProject = async (req, res) => {
 
 export const getProjects = async (req, res) => {
   try {
-    const projects = await Project.findAll({
-      where: {
-        ownerId: req.user.id,
-      },
-      include: [
-        { model: User, as: 'owner', attributes: ['id', 'firstName', 'lastName', 'email'] },
-        { model: Task, as: 'tasks', attributes: ['id', 'title', 'status'] },
-      ],
-    });
+    const projects = await Project.find({ ownerId: req.user.id });
 
     res.json({
       message: 'Projects retrieved',
@@ -55,36 +47,34 @@ export const getProjectById = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    const project = await Project.findByPk(projectId, {
-      include: [
-        { model: User, as: 'owner', attributes: ['id', 'firstName', 'lastName', 'email'] },
-        { model: Task, as: 'tasks' },
-        {
-          model: User,
-          as: 'members',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
-          through: { attributes: ['role'] },
-        },
-      ],
-    });
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check if user has access
-    const hasAccess = project.ownerId === req.user.id ||
-      await ProjectMember.findOne({
-        where: { projectId, userId: req.user.id },
-      });
+    const hasAccess = project.ownerId.toString() === req.user.id ||
+      await ProjectMember.findOne({ projectId, userId: req.user.id }) ||
+      req.user.role === 'admin';
 
-    if (!hasAccess && req.user.role !== 'admin') {
+    if (!hasAccess) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Fetch members with user info
+    const memberships = await ProjectMember.find({ projectId }).populate('userId', 'firstName lastName email');
+    const members = memberships.map(m => ({
+      _id: m.userId?._id,
+      firstName: m.userId?.firstName,
+      lastName: m.userId?.lastName,
+      email: m.userId?.email,
+      role: m.role,
+    }));
+
     res.json({
       message: 'Project retrieved',
-      project,
+      project: { ...project.toObject(), members },
     });
   } catch (error) {
     console.error(error);
@@ -97,23 +87,23 @@ export const updateProject = async (req, res) => {
     const { projectId } = req.params;
     const { name, description, status, dueDate } = req.body;
 
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
-    if (project.ownerId !== req.user.id && req.user.role !== 'admin') {
+    if (project.ownerId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    await project.update({
-      name: name || project.name,
-      description: description || project.description,
-      status: status || project.status,
-      dueDate: dueDate ? new Date(dueDate) : project.dueDate,
-    });
+    project.name = name || project.name;
+    project.description = description || project.description;
+    project.status = status || project.status;
+    project.dueDate = dueDate ? new Date(dueDate) : project.dueDate;
+
+    await project.save();
 
     res.json({
       message: 'Project updated successfully',
@@ -129,25 +119,25 @@ export const deleteProject = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
-    if (project.ownerId !== req.user.id && req.user.role !== 'admin') {
+    if (project.ownerId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     // Delete related tasks
-    await Task.destroy({ where: { projectId } });
+    await Task.deleteMany({ projectId });
 
     // Delete project members
-    await ProjectMember.destroy({ where: { projectId } });
+    await ProjectMember.deleteMany({ projectId });
 
     // Delete project
-    await project.destroy();
+    await Project.findByIdAndDelete(projectId);
 
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
@@ -161,26 +151,26 @@ export const addMember = async (req, res) => {
     const { projectId } = req.params;
     const { userId, role } = req.body;
 
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
-    if (project.ownerId !== req.user.id && req.user.role !== 'admin') {
+    if (project.ownerId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     // Check if user exists
-    const user = await User.findByPk(userId);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
     // Check if already a member
     const existingMember = await ProjectMember.findOne({
-      where: { projectId, userId },
+      projectId, userId
     });
 
     if (existingMember) {
@@ -207,24 +197,24 @@ export const removeMember = async (req, res) => {
   try {
     const { projectId, userId } = req.params;
 
-    const project = await Project.findByPk(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
-    if (project.ownerId !== req.user.id && req.user.role !== 'admin') {
+    if (project.ownerId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     // Cannot remove owner
-    if (project.ownerId === userId) {
+    if (project.ownerId.toString() === userId) {
       return res.status(400).json({ message: 'Cannot remove project owner' });
     }
 
-    await ProjectMember.destroy({
-      where: { projectId, userId },
+    await ProjectMember.findOneAndDelete({
+      projectId, userId
     });
 
     res.json({ message: 'Member removed successfully' });

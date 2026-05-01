@@ -1,55 +1,14 @@
-import { DataTypes } from 'sequelize';
-import sequelize from '../config/database.js';
+import mongoose from 'mongoose';
 
-const Task = sequelize.define('Task', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  projectId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  assignedTo: {
-    type: DataTypes.UUID,
-    allowNull: true,
-  },
-  status: {
-    type: DataTypes.ENUM('todo', 'in_progress', 'completed'),
-    defaultValue: 'todo',
-  },
-  priority: {
-    type: DataTypes.ENUM('low', 'medium', 'high'),
-    defaultValue: 'medium',
-  },
-  dueDate: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  createdBy: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-}, {
-  timestamps: true,
-  tableName: 'tasks',
-});
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
+  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  status: { type: String, enum: ['todo', 'in_progress', 'completed'], default: 'todo' },
+  priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  dueDate: { type: Date },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+}, { timestamps: true });
 
-export default Task;
+export default mongoose.model('Task', taskSchema);

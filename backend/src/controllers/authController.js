@@ -7,7 +7,7 @@ export const signup = async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
 
     // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already registered' });
     }
@@ -26,7 +26,7 @@ export const signup = async (req, res) => {
 
     // Generate token
     const token = generateToken({
-      id: user.id,
+      id: user._id,
       email: user.email,
       role: user.role,
     });
@@ -34,7 +34,7 @@ export const signup = async (req, res) => {
     res.status(201).json({
       message: 'User registered successfully',
       user: {
-        id: user.id,
+        id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -53,7 +53,7 @@ export const login = async (req, res) => {
     const { email, password } = req.body;
 
     // Find user
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
@@ -66,7 +66,7 @@ export const login = async (req, res) => {
 
     // Generate token
     const token = generateToken({
-      id: user.id,
+      id: user._id,
       email: user.email,
       role: user.role,
     });
@@ -74,7 +74,7 @@ export const login = async (req, res) => {
     res.json({
       message: 'Login successful',
       user: {
-        id: user.id,
+        id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
@@ -90,13 +90,17 @@ export const login = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] },
-    });
+    const user = await User.findById(req.user.id).select('-password');
 
     res.json({
       message: 'Profile retrieved',
-      user,
+      user: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+      }
     });
   } catch (error) {
     console.error(error);
