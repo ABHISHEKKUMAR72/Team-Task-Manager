@@ -2,39 +2,32 @@
 
 ## 🚀 Running Locally (5 minutes)
 
-### Option 1: Docker Compose (Easiest)
+**Prerequisites:**
+- Node.js 16+ (https://nodejs.org)
+- MongoDB 5.0+ (https://www.mongodb.com/try/download/community)
+
+**Setup & Start:**
 
 ```bash
-# Install Docker from https://www.docker.com/products/docker-desktop
+# 1. Install all dependencies for both frontend and backend
+npm run install-all
 
-# In project root:
-docker-compose up -d
+# 2. Start both services concurrently
+npm run dev
 
-# Wait 2-3 minutes for services to start
-# Frontend: http://localhost:3000
-# Backend: http://localhost:5000
-# Database: localhost:5432
+# Frontend will be available at: http://localhost:3000
+# Backend will be available at: http://localhost:5000
 ```
 
-### Option 2: Manual Setup
-
-**Install Prerequisites:**
-- Node.js 16+ (https://nodejs.org)
-- PostgreSQL 12+ (https://www.postgresql.org/download/)
-
-**Setup:**
+### Alternative: Individual Service Setup
 
 ```bash
 # Terminal 1: Backend
 cd backend
-npm install
-cp .env.example .env
-# Edit .env with your PostgreSQL credentials
 npm run dev
 
 # Terminal 2: Frontend
 cd frontend
-npm install
 npm start
 ```
 

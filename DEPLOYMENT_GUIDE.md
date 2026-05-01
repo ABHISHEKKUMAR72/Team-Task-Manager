@@ -8,7 +8,7 @@ This guide will help you deploy the Team Task Manager application to Railway in 
 
 1. **Railway Account**: https://railway.app
 2. **GitHub Account**: With push access to this repository
-3. **PostgreSQL**: Railway will provide this automatically
+3. **MongoDB Atlas Account**: https://www.mongodb.com/cloud/atlas (For production database)
 
 ## Step 1: Connect Your GitHub Repository
 
@@ -19,11 +19,11 @@ This guide will help you deploy the Team Task Manager application to Railway in 
 5. Select **"ABHISHEKKUMAR72/Team-Task-Manager"** from the list
 6. Click **"Deploy Now"**
 
-## Step 2: Create PostgreSQL Database
+## Step 2: Setup MongoDB Atlas
 
-1. In Railway Dashboard, click **"Add Service"**
-2. Select **"Database"** → **"PostgreSQL"**
-3. Note the connection details (you'll need these)
+1. Create a free cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a database user and whitelist all IPs (0.0.0.0/0) or Railway's outbound IPs
+3. Get your **MongoDB Connection String** (SRV URI)
 
 ## Step 3: Deploy Backend
 
@@ -31,7 +31,7 @@ This guide will help you deploy the Team Task Manager application to Railway in 
 2. Select your Team-Task-Manager repo
 3. Configure the service:
    - **Name**: `team-task-manager-backend`
-   - **Dockerfile**: `Dockerfile.backend`
+   - **Root Directory**: `backend`
    - **Port**: `5000`
 
 4. Add environment variables:
@@ -40,17 +40,8 @@ This guide will help you deploy the Team Task Manager application to Railway in 
    PORT=5000
    JWT_SECRET=<generate-a-strong-secret>
    FRONTEND_URL=<your-frontend-railway-url>
+   MONGO_URI=<your-mongodb-atlas-uri>
    ```
-   
-   For database variables, Railway will auto-provide:
-   - `DATABASE_URL` (if using Railway PostgreSQL)
-   
-   Or set manually:
-   - `DB_HOST=<your-postgres-host>`
-   - `DB_PORT=5432`
-   - `DB_NAME=team_task_manager`
-   - `DB_USER=postgres`
-   - `DB_PASSWORD=<your-password>`
 
 5. Click **"Deploy"**
 
@@ -60,7 +51,7 @@ This guide will help you deploy the Team Task Manager application to Railway in 
 2. Select your Team-Task-Manager repo again
 3. Configure the service:
    - **Name**: `team-task-manager-frontend`
-   - **Dockerfile**: `Dockerfile.frontend`
+   - **Root Directory**: `frontend`
    - **Port**: `3000`
 
 4. Add environment variables:
@@ -83,11 +74,7 @@ This guide will help you deploy the Team Task Manager application to Railway in 
 ```
 NODE_ENV=production
 PORT=5000
-DB_HOST=<postgres-host>
-DB_PORT=5432
-DB_NAME=team_task_manager
-DB_USER=postgres
-DB_PASSWORD=<secure-password>
+MONGO_URI=<mongodb-srv-uri>
 JWT_SECRET=<long-random-secret-key>
 FRONTEND_URL=https://your-frontend.railway.app
 ```
@@ -109,11 +96,11 @@ After deployment, your URLs will be:
 ## Common Issues & Solutions
 
 ### Database Connection Errors
-**Problem**: "Can't connect to database"
+**Problem**: "Can't connect to MongoDB"
 **Solution**:
-1. Verify `DB_HOST`, `DB_PORT`, `DB_NAME` are correct
-2. Check PostgreSQL service is running in Railway
-3. Ensure `DATABASE_URL` format is correct if using it
+1. Verify `MONGO_URI` is correct in Railway variables
+2. Ensure MongoDB Atlas IP Whitelist includes `0.0.0.0/0`
+3. Check database user permissions in Atlas
 
 ### CORS Errors
 **Problem**: Frontend can't reach backend

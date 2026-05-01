@@ -24,18 +24,18 @@ Team Task Manager is a full-stack web application that enables teams to collabor
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │ Routes: Auth, Projects, Tasks                        │  │
 │  │ Controllers: Business Logic                          │  │
-│  │ Models: Sequelize ORM                                │  │
+│  │ Models: Mongoose (MongoDB)                           │  │
 │  │ Middleware: Authentication, Authorization            │  │
 │  │ Utils: JWT, Password Hashing                         │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
-                          ↓ SQL
+                          ↓ NoSQL
 ┌─────────────────────────────────────────────────────────────┐
-│              PostgreSQL Database                             │
-│           Running on Port 5432                              │
+│              MongoDB Database                                │
+│           Running on Port 27017                             │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │ Tables: Users, Projects, Tasks, ProjectMembers      │  │
-│  │ Relationships: Foreign Keys, Junctions               │  │
+│  │ Collections: Users, Projects, Tasks, ProjectMembers │  │
+│  │ Relationships: References (ObjectIds)                │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -52,8 +52,8 @@ Team Task Manager is a full-stack web application that enables teams to collabor
 ### Backend
 - **Node.js 18+**: JavaScript runtime
 - **Express.js 4.18.2**: Web framework
-- **PostgreSQL 15+**: Relational database
-- **Sequelize 6.35.0**: ORM for database
+- **MongoDB 5.0+**: NoSQL database
+- **Mongoose 8.x**: ODM for database
 - **bcryptjs 2.4.3**: Password hashing
 - **jsonwebtoken 9.1.0**: JWT authentication
 - **cors 2.8.5**: Cross-origin requests
@@ -66,56 +66,56 @@ Team Task Manager is a full-stack web application that enables teams to collabor
 - **Nginx**: Reverse proxy (optional)
 - **Railway.app**: Cloud deployment platform
 
-## Database Schema
+## Database Collections
 
-### Users Table
-| Column | Type | Constraint | Description |
-|--------|------|-----------|-------------|
-| id | UUID | Primary Key | Unique user identifier |
-| firstName | String | Not Null | User's first name |
-| lastName | String | Not Null | User's last name |
-| email | String | Unique, Not Null | User's email |
-| password | String | Not Null | Hashed password |
-| role | Enum | Default 'member' | admin or member |
-| createdAt | Timestamp | Auto | Creation timestamp |
-| updatedAt | Timestamp | Auto | Update timestamp |
+### Users
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | ObjectId | Unique user identifier |
+| firstName | String | User's first name |
+| lastName | String | User's last name |
+| email | String | Unique user email |
+| password | String | Hashed password |
+| role | String | admin or member |
+| createdAt | Date | Auto-generated |
+| updatedAt | Date | Auto-generated |
 
-### Projects Table
-| Column | Type | Constraint | Description |
-|--------|------|-----------|-------------|
-| id | UUID | Primary Key | Unique project identifier |
-| name | String | Not Null | Project name |
-| description | Text | Nullable | Project description |
-| ownerId | UUID | Foreign Key | Owner user ID |
-| status | Enum | Default 'active' | active, completed, archived |
-| startDate | Date | Nullable | Project start date |
-| dueDate | Date | Nullable | Project due date |
-| createdAt | Timestamp | Auto | Creation timestamp |
-| updatedAt | Timestamp | Auto | Update timestamp |
+### Projects
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | ObjectId | Unique project identifier |
+| name | String | Project name |
+| description | String | Project description |
+| owner | ObjectId | Reference to User |
+| status | String | active, completed, archived |
+| startDate | Date | Project start date |
+| dueDate | Date | Project due date |
+| createdAt | Date | Auto-generated |
+| updatedAt | Date | Auto-generated |
 
-### Tasks Table
-| Column | Type | Constraint | Description |
-|--------|------|-----------|-------------|
-| id | UUID | Primary Key | Unique task identifier |
-| title | String | Not Null | Task title |
-| description | Text | Nullable | Task description |
-| projectId | UUID | Foreign Key | Associated project |
-| assignedTo | UUID | Foreign Key | Assigned user ID |
-| status | Enum | Default 'todo' | todo, in_progress, completed |
-| priority | Enum | Default 'medium' | low, medium, high |
-| dueDate | Date | Nullable | Task due date |
-| createdBy | UUID | Foreign Key | Creator user ID |
-| createdAt | Timestamp | Auto | Creation timestamp |
-| updatedAt | Timestamp | Auto | Update timestamp |
+### Tasks
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | ObjectId | Unique task identifier |
+| title | String | Task title |
+| description | String | Task description |
+| project | ObjectId | Reference to Project |
+| assignedTo | ObjectId | Reference to User |
+| status | String | todo, in_progress, completed |
+| priority | String | low, medium, high |
+| dueDate | Date | Task due date |
+| createdBy | ObjectId | Reference to User |
+| createdAt | Date | Auto-generated |
+| updatedAt | Date | Auto-generated |
 
-### ProjectMembers Table (Junction)
-| Column | Type | Constraint | Description |
-|--------|------|-----------|-------------|
-| id | UUID | Primary Key | Unique record identifier |
-| projectId | UUID | Foreign Key | Associated project |
-| userId | UUID | Foreign Key | Associated user |
-| role | Enum | Default 'member' | admin or member |
-| createdAt | Timestamp | Auto | Creation timestamp |
+### ProjectMembers
+| Field | Type | Description |
+|-------|------|-------------|
+| _id | ObjectId | Unique record identifier |
+| project | ObjectId | Reference to Project |
+| user | ObjectId | Reference to User |
+| role | String | admin or member |
+| createdAt | Date | Auto-generated |
 
 ## API Design
 
@@ -174,7 +174,7 @@ Response Error (4xx/5xx):
 
 ### Data Validation
 - Input validation on all endpoints
-- SQL injection prevention via ORM
+- NoSQL injection prevention via Mongoose
 - XSS protection via React escaping
 - Rate limiting (to be added)
 
@@ -185,12 +185,12 @@ Response Error (4xx/5xx):
 
 ## Deployment Architecture
 
-### Development (Docker Compose)
+### Development (Local)
 ```
-docker-compose.yml
-├── frontend (React dev server)
-├── backend (Node.js)
-└── postgres (Database)
+Team-Task-Manager (Root)
+├── backend (Node.js + Mongoose)
+├── frontend (React)
+└── MongoDB (Local Service)
 ```
 
 ### Production (Railway)
@@ -202,8 +202,8 @@ Railway Project
 ├── Backend Service
 │   ├── Dockerfile.backend
 │   └── Express.js API
-└── PostgreSQL Database
-    └── Managed by Railway
+└── MongoDB Database
+    └── Managed by MongoDB Atlas
 ```
 
 ## File Structure
@@ -417,11 +417,11 @@ FRONTEND_URL=https://production-url.com
 
 ## Version Information
 
-- **API Version**: 1.0.0
+- **API Version**: 1.1.0
 - **Node.js**: 18+
 - **React**: 18.2.0
-- **PostgreSQL**: 12+
-- **Last Updated**: January 2024
+- **MongoDB**: 5.0+
+- **Last Updated**: May 2026
 
 ---
 

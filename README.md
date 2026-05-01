@@ -35,8 +35,8 @@ A comprehensive web application for managing projects and tasks with role-based 
 
 ### Backend
 - **Framework**: Express.js (Node.js)
-- **Database**: PostgreSQL
-- **ORM**: Sequelize
+- **Database**: MongoDB
+- **ORM**: Mongoose
 - **Authentication**: JWT (jsonwebtoken)
 - **Password Hashing**: bcryptjs
 - **Validation**: express-validator
@@ -81,10 +81,9 @@ A comprehensive web application for managing projects and tasks with role-based 
 
 ### Prerequisites
 - Node.js 16+ and npm
-- PostgreSQL 12+
-- Docker & Docker Compose (optional)
+- MongoDB 5.0+ (Local or Atlas)
 
-### Installation
+### Installation & Development
 
 1. **Clone the repository**
    ```bash
@@ -92,56 +91,33 @@ A comprehensive web application for managing projects and tasks with role-based 
    cd Team-Task-Manager
    ```
 
-2. **Setup Backend**
+2. **Install All Dependencies**
    ```bash
-   cd backend
-   npm install
-   cp .env.example .env
-   # Edit .env with your database credentials
-   cd ..
+   npm run install-all
    ```
 
-3. **Setup Frontend**
+3. **Start Development Server**
    ```bash
-   cd frontend
-   npm install
-   cd ..
+   npm run dev
    ```
-
-### Development
-
-#### Using Docker Compose (Recommended)
-```bash
-docker-compose up -d
-```
 
 The application will be available at:
 - Frontend: http://localhost:3000
 - Backend: http://localhost:5000
-- Database: localhost:5432
 
-#### Manual Setup
+#### Individual Service Setup
 
-1. **Start PostgreSQL**
-   ```bash
-   # Make sure PostgreSQL is running on your system
-   ```
+**Start Backend:**
+```bash
+cd backend
+npm run dev
+```
 
-2. **Start Backend**
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   # Backend runs on http://localhost:5000
-   ```
-
-3. **Start Frontend** (in another terminal)
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   # Frontend runs on http://localhost:3000
-   ```
+**Start Frontend:**
+```bash
+cd frontend
+npm start
+```
 
 ## 📖 Usage Guide
 
@@ -178,61 +154,40 @@ The application will be available at:
 - JWT-based authentication
 - Role-based access control
 - CORS protection
-- SQL injection prevention (via Sequelize ORM)
-- XSS protection (React escaping)
 - Input validation and sanitization
 - Secure token storage in localStorage
 
-## 📦 Database Schema
+## 📦 Database Models (MongoDB)
 
-### Users Table
-```sql
-- id (UUID, Primary Key)
-- firstName (String)
-- lastName (String)
-- email (String, Unique)
-- password (String, Hashed)
-- role (Enum: admin, member)
-- createdAt (Timestamp)
-- updatedAt (Timestamp)
-```
+### User
+- firstName: String
+- lastName: String
+- email: String (Unique)
+- password: String (Hashed)
+- role: Enum (admin, member)
 
-### Projects Table
-```sql
-- id (UUID, Primary Key)
-- name (String)
-- description (Text)
-- ownerId (UUID, Foreign Key)
-- status (Enum: active, completed, archived)
-- startDate (Date)
-- dueDate (Date)
-- createdAt (Timestamp)
-- updatedAt (Timestamp)
-```
+### Project
+- name: String
+- description: String
+- owner: ObjectId (User)
+- status: Enum (active, completed, archived)
+- startDate: Date
+- dueDate: Date
 
-### Tasks Table
-```sql
-- id (UUID, Primary Key)
-- title (String)
-- description (Text)
-- projectId (UUID, Foreign Key)
-- assignedTo (UUID, Foreign Key)
-- status (Enum: todo, in_progress, completed)
-- priority (Enum: low, medium, high)
-- dueDate (Date)
-- createdBy (UUID, Foreign Key)
-- createdAt (Timestamp)
-- updatedAt (Timestamp)
-```
+### Task
+- title: String
+- description: String
+- project: ObjectId (Project)
+- assignedTo: ObjectId (User)
+- status: Enum (todo, in_progress, completed)
+- priority: Enum (low, medium, high)
+- dueDate: Date
+- createdBy: ObjectId (User)
 
-### ProjectMembers Table (Junction Table)
-```sql
-- id (UUID, Primary Key)
-- projectId (UUID, Foreign Key)
-- userId (UUID, Foreign Key)
-- role (Enum: admin, member)
-- createdAt (Timestamp)
-```
+### ProjectMember
+- project: ObjectId (Project)
+- user: ObjectId (User)
+- role: Enum (admin, member)
 
 ## 🚢 Deployment to Railway
 
@@ -377,9 +332,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🆘 Troubleshooting
 
 ### Database Connection Issues
-- Ensure PostgreSQL is running
-- Check database credentials in .env
-- Verify database exists
+- Ensure MongoDB is running (default port 27017)
+- Check MONGO_URI in backend .env
 
 ### CORS Errors
 - Make sure frontend URL is set in backend .env
