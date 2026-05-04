@@ -171,11 +171,6 @@ export const LoginPage = () => {
           <li>Real-time task status updates</li>
           <li>Collaborate with your whole team</li>
         </ul>
-        <div className="auth-demo-creds">
-          <p style={{ fontWeight: 600, marginBottom: 8 }}>🧪 Try demo accounts:</p>
-          <div className="demo-cred"><span className="role-badge role-admin">Admin</span> admin@demo.com / demo1234</div>
-          <div className="demo-cred"><span className="role-badge role-member">Member</span> member@demo.com / demo1234</div>
-        </div>
       </div>
 
       <div className="auth-panel-right">
