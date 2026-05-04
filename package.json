@@ -12,7 +12,7 @@
   "scripts": {
     "install-all": "npm install",
     "dev": "npm start --workspace=frontend",
-    "build": "npm run build --workspace=frontend",
+    "build": "npm run build --workspace=frontend && rm -rf frontend/node_modules frontend/src frontend/public",
     "start": "node server.js",
     "serve": "npx serve -s frontend/build"
   },
