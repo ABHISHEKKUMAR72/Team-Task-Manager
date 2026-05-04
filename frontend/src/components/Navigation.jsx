@@ -52,6 +52,9 @@ export const Navigation = () => {
           {user && (
             <div className="nav-right">
               <span className="nav-name hide-mobile">{user.firstName} {user.lastName}</span>
+              <span className={`nav-role-badge ${user.role === 'admin' ? 'nav-role-admin' : 'nav-role-member'}`}>
+                {user.role === 'admin' ? '👑 Admin' : '👤 Member'}
+              </span>
               <div className="nav-avatar">{initials}</div>
               <button className="btn btn-ghost btn-sm hide-mobile" onClick={handleLogout}>
                 Log out
@@ -77,6 +80,9 @@ export const Navigation = () => {
             <div className="nav-avatar">{initials}</div>
             <span style={{ fontSize: '.9rem', fontWeight: 600, color: 'var(--text)' }}>
               {user.firstName} {user.lastName}
+            </span>
+            <span className={`nav-role-badge ${user.role === 'admin' ? 'nav-role-admin' : 'nav-role-member'}`}>
+              {user.role === 'admin' ? '👑 Admin' : '👤 Member'}
             </span>
           </div>
           <hr className="drawer-divider" />

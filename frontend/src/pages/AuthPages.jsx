@@ -6,7 +6,10 @@ import '../styles/Auth.css';
 import '../styles/App.css';
 
 export const SignupPage = () => {
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({
+    firstName: '', lastName: '', email: '',
+    password: '', confirmPassword: '', role: 'member'
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -18,9 +21,16 @@ export const SignupPage = () => {
     e.preventDefault();
     setError('');
     if (form.password !== form.confirmPassword) { setError('Passwords do not match.'); return; }
+    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     try {
-      const res = await authService.signup({ firstName: form.firstName, lastName: form.lastName, email: form.email, password: form.password });
+      const res = await authService.signup({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      });
       login(res.data.user, res.data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -38,11 +48,21 @@ export const SignupPage = () => {
         <h1>Get your team on the same page</h1>
         <p>Plan projects, assign tasks, and ship faster — together.</p>
         <ul className="auth-feature-list">
-          <li>Create and manage team projects</li>
-          <li>Assign tasks with priorities & due dates</li>
-          <li>Track progress across your whole team</li>
+          <li><strong>Admin</strong>: Create projects, add members, assign tasks</li>
+          <li><strong>Member</strong>: View & update your assigned tasks</li>
+          <li>Track progress with real-time status updates</li>
           <li>Free to use, no credit card needed</li>
         </ul>
+        <div className="auth-role-explainer">
+          <div className="role-card">
+            <span className="role-badge role-admin">Admin</span>
+            <p>Full control — create projects, add team members, assign and manage tasks</p>
+          </div>
+          <div className="role-card">
+            <span className="role-badge role-member">Member</span>
+            <p>Join projects, view tasks assigned to you, update task status</p>
+          </div>
+        </div>
       </div>
 
       <div className="auth-panel-right">
@@ -69,14 +89,40 @@ export const SignupPage = () => {
             </div>
             <div className="field">
               <label>Password</label>
-              <input type="password" name="password" value={form.password} onChange={change} placeholder="At least 8 characters" required />
+              <input type="password" name="password" value={form.password} onChange={change} placeholder="At least 6 characters" required />
             </div>
             <div className="field">
               <label>Confirm password</label>
               <input type="password" name="confirmPassword" value={form.confirmPassword} onChange={change} placeholder="Repeat your password" required />
             </div>
+
+            {/* Role Selection */}
+            <div className="field">
+              <label>I am joining as a…</label>
+              <div className="role-toggle">
+                <button
+                  type="button"
+                  className={`role-option ${form.role === 'admin' ? 'active' : ''}`}
+                  onClick={() => setForm(p => ({ ...p, role: 'admin' }))}
+                >
+                  <span className="role-icon">👑</span>
+                  <span className="role-title">Admin</span>
+                  <span className="role-desc">Create & manage projects</span>
+                </button>
+                <button
+                  type="button"
+                  className={`role-option ${form.role === 'member' ? 'active' : ''}`}
+                  onClick={() => setForm(p => ({ ...p, role: 'member' }))}
+                >
+                  <span className="role-icon">👤</span>
+                  <span className="role-title">Member</span>
+                  <span className="role-desc">Work on assigned tasks</span>
+                </button>
+              </div>
+            </div>
+
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Creating account…' : 'Create account'}
+              {loading ? 'Creating account…' : `Sign up as ${form.role === 'admin' ? 'Admin' : 'Member'}`}
             </button>
           </form>
 
@@ -125,6 +171,11 @@ export const LoginPage = () => {
           <li>Real-time task status updates</li>
           <li>Collaborate with your whole team</li>
         </ul>
+        <div className="auth-demo-creds">
+          <p style={{ fontWeight: 600, marginBottom: 8 }}>🧪 Try demo accounts:</p>
+          <div className="demo-cred"><span className="role-badge role-admin">Admin</span> admin@demo.com / demo1234</div>
+          <div className="demo-cred"><span className="role-badge role-member">Member</span> member@demo.com / demo1234</div>
+        </div>
       </div>
 
       <div className="auth-panel-right">

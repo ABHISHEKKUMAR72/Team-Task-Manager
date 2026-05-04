@@ -65,7 +65,15 @@ export const Dashboard = () => {
     <div className="page-wrapper dashboard">
       <div className="dash-header">
         <h1>{greeting()}, {user?.firstName} 👋</h1>
-        <p>Here's what's on your plate today.</p>
+        <p>
+          <span className={`role-badge ${user?.role === 'admin' ? 'role-admin' : 'role-member'}`}>
+            {user?.role === 'admin' ? '👑 Admin' : '👤 Member'}
+          </span>
+          {' '}
+          {user?.role === 'admin'
+            ? "Here's an overview of all your team's work."
+            : "Here's what's assigned to you."}
+        </p>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
