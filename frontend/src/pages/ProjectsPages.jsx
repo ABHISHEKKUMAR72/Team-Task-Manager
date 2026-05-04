@@ -342,11 +342,12 @@ export const ProjectDetailPage = () => {
   // Members list for assignment dropdown
   const assignableMembers = [
     // Include the owner
-    ...(project?.owner ? [{ _id: project.owner._id || project.owner, firstName: project.owner.firstName || 'Owner', lastName: project.owner.lastName || '' }] : []),
+    ...(project?.owner ? [{ _id: project.owner._id || project.owner, firstName: project.owner.firstName || 'Owner', lastName: project.owner.lastName || '', email: project.owner.email || '' }] : []),
     ...members.map(m => ({
       _id: m._id || m.user?._id || m.userId,
       firstName: m.firstName || m.user?.firstName || '',
       lastName: m.lastName || m.user?.lastName || '',
+      email: m.email || m.user?.email || '',
     }))
   ].filter((m, i, arr) => m._id && arr.findIndex(x => x._id?.toString() === m._id?.toString()) === i);
 
@@ -428,7 +429,7 @@ export const ProjectDetailPage = () => {
                       <option value="">— Unassigned —</option>
                       {assignableMembers.map(m => (
                         <option key={m._id} value={m._id}>
-                          {m.firstName} {m.lastName}
+                          {m.firstName} {m.lastName} {m.email ? `(${m.email})` : ''}
                         </option>
                       ))}
                     </select>
