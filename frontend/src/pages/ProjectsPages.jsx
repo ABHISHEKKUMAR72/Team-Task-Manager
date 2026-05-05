@@ -382,7 +382,7 @@ export const ProjectDetailPage = () => {
 
       {!isAdmin && (
         <div className="alert alert-info">
-          <strong>👤 Member:</strong> You can update status of tasks assigned to you. Only Admins can create/delete tasks.
+          <strong>👤 Member view:</strong> You see only tasks assigned to you. Admins can see all project tasks. You can update status of your assigned tasks; only Admins can create/delete tasks.
         </div>
       )}
 

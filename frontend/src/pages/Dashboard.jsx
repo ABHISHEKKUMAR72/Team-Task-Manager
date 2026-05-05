@@ -70,9 +70,7 @@ export const Dashboard = () => {
             {user?.role === 'admin' ? '👑 Admin' : '👤 Member'}
           </span>
           {' '}
-          {user?.role === 'admin'
-            ? "Here's an overview of all your team's work."
-            : "Here's what's assigned to you."}
+          Here's what's assigned to you.
         </p>
       </div>
 
